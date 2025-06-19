@@ -569,13 +569,13 @@
       const BASE_URL =
         "https://generativelanguage.googleapis.com/v1beta/models/";
 
-      // IMPORTANT: GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+      // !!! PENTING: GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA !!!
       // URL Web App untuk Wali Murid (Hanya Baca, Akses: Anyone)
       const PARENT_WEB_APP_URL =
-        "https://script.google.com/macros/s/AKfycbxGRF7vwjcJ51Z9bUB2dH0k_hJ2hGevV2JchM8aghoPzZAP2dNu-8Bv2xc4zLjvNRXVCQ/exec";
+        "https://script.google.com/macros/s/AKfycbwM258yBSbNODgJLRarCOdAIRdPQnLZ3HHXCKi3alTAtoLsWH1OCxmdrD4OIKiMLCz2cA/exec";
       // URL Web App untuk Guru (Baca & Tulis, Akses: Anyone with Google account)
       const TEACHER_WEB_APP_URL =
-        "Yhttps://script.google.com/macros/s/AKfycbwM258yBSbNODgJLRarCOdAIRdPQnLZ3HHXCKi3alTAtoLsWH1OCxmdrD4OIKiMLCz2cA/exec";
+        "https://script.google.com/macros/s/AKfycbxpMewSGIhbmMSj2A6oGyV5ND0okiObrPCzmorWYpuJW6x7IILB2zN9fSUmeKcxR-jgeQ/exec";
 
       // Element references
       const parentLoginSection = document.getElementById(
@@ -991,15 +991,15 @@
         }
       });
 
-      // Teacher Login (triggers Apps Script Web App URL, which will handle Google OAuth)
+      // Teacher Login (simulated - actual auth happens on first Apps Script call)
       authTeacherBtn.addEventListener("click", () => {
-        // Let's simulate a successful teacher login by directly showing the dashboard
-        // and relying on subsequent calls to TEACHER_WEB_APP_URL (for data saving)
-        // to perform the actual email validation. This is a simplification for the client-side UI.
+        // This is a UI-level simulation. The actual Google authentication happens
+        // when the browser makes a request to TEACHER_WEB_APP_URL for the first time
+        // and Google prompts for authorization.
         renderDashboard({}); // Render empty dashboard for teacher to select student
         showAlert(
           teacherLoginAlert,
-          "Silakan pilih siswa yang ingin Anda kelola datanya.",
+          "Silakan pilih siswa yang ingin Anda kelola datanya. Anda akan diminta otentikasi Google saat pertama kali mencari siswa/menyimpan data.",
           "success"
         );
       });
@@ -1037,7 +1037,8 @@
 
         const studentData = await fetchStudentDataForTeacher(nis); // Use teacher's fetch function
 
-        if (studentData) {
+        if (studentData && studentData.nis) {
+          // Check if studentData is not empty and has NIS
           currentStudentNis = nis;
           selectedStudentNameDisplay.textContent = studentData.nama || "N/A";
           selectedStudentNisDisplay.textContent = studentData.nis || "N/A";
@@ -1147,10 +1148,11 @@
         }
       });
 
-      // Initial display state
+      // Initial display state: show parent login by default
       document.addEventListener("DOMContentLoaded", () => {
-        parentLoginSection.classList.remove("hidden"); // Show parent login by default
+        parentLoginSection.classList.remove("hidden");
         teacherLoginSection.classList.add("hidden");
+        dashboardSection.classList.add("hidden");
       });
     </script>
   </body>
