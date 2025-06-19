@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monitoring Progres Siswa</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f0f4f8; /* Light blue-gray background */
+        display: flex;
+        justify-content: center;
+        align-items: flex-start; /* Align to start to prevent extreme centering on tall content */
+        min-height: 100vh;
+        padding: 2rem 1rem;
+        box-sizing: border-box;
+      }
+      #app-container {
+        background-color: #ffffff;
+        border-radius: 1.5rem; /* More rounded corners */
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Stronger shadow */
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 480px; /* Max width for mobile-first approach */
+        animation: fadeIn 0.8s ease-out forwards;
+        position: relative; /* For loader positioning */
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .form-input,
+      .form-select {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border: 1px solid #cbd5e1; /* Gray-300 */
+        border-radius: 0.75rem; /* Rounded input corners */
+        transition: all 0.2s ease-in-out;
+        font-size: 1rem;
+      }
+      .form-input:focus,
+      .form-select:focus {
+        outline: none;
+        border-color: #3b82f6; /* Blue-500 */
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); /* Blue focus ring */
+      }
+      .btn-primary {
+        background-color: #3b82f6; /* Blue-500 */
+        color: white;
+        padding: 0.8rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease-in-out;
+        width: 100%;
+      }
+      .btn-primary:hover {
+        background-color: #2563eb; /* Blue-600 */
+      }
+      .btn-link {
+        display: block;
+        text-align: center;
+        margin-top: 1.5rem;
+        color: #3b82f6; /* Blue-500 */
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: underline;
+        transition: color 0.2s ease-in-out;
+      }
+      .btn-link:hover {
+        color: #2563eb; /* Blue-600 */
+      }
+      .alert {
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+      }
+      .alert.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .alert-error {
+        background-color: #fee2e2; /* Red-100 */
+        color: #ef4444; /* Red-500 */
+        border: 1px solid #fca5a5; /* Red-300 */
+      }
+      .alert-success {
+        background-color: #dcfce7; /* Green-100 */
+        color: #22c55e; /* Green-500 */
+        border: 1px solid #86efac; /* Green-300 */
+      }
+      .dashboard-card {
+        background-color: #f8fafc; /* Lighter white */
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+      }
+      .dashboard-card-title {
+        font-size: 1.25rem; /* Larger title */
+        font-weight: 700;
+        color: #1f2937; /* Darker text */
+        margin-bottom: 1rem;
+      }
+      .loader {
+        border: 4px solid #f3f3f3; /* Light grey */
+        border-top: 4px solid #3b82f6; /* Blue */
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: none; /* Hidden by default */
+        z-index: 10;
+      }
+      .loader.show {
+        display: block;
+      }
+      @keyframes spin {
+        0% {
+          transform: translate(-50%, -50%) rotate(0deg);
+        }
+        100% {
+          transform: translate(-50%, -50%) rotate(360deg);
+        }
+      }
+      /* Responsiveness */
+      @media (min-width: 640px) {
+        /* sm breakpoint */
+        #app-container {
+          max-width: 600px;
+        }
+      }
+      .task-item.completed {
+        text-decoration: line-through;
+        color: #6b7280; /* Gray-500 */
+      }
+      .grid-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .grid-cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app-container" class="relative">
+      <!-- Loader -->
+      <div id="loader" class="loader"></div>
+
+      <!-- Parent Login Section -->
+      <div id="parent-login-section">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">
+          Login Wali Murid
+        </h1>
+        <div id="parent-login-alert" class="alert alert-error hidden"></div>
+        <form id="parent-login-form" class="space-y-6">
+          <div>
+            <label
+              for="parent-nis"
+              class="block text-gray-700 text-sm font-medium mb-2"
+              >NIS (Nomor Induk Siswa)</label
+            >
+            <input
+              type="text"
+              id="parent-nis"
+              name="nis"
+              class="form-input"
+              placeholder="Masukkan NIS"
+              required
+            />
+          </div>
+          <button type="submit" class="btn-primary">Login</button>
+        </form>
+        <a href="#" id="switch-to-teacher" class="btn-link"
+          >Login sebagai Guru</a
+        >
+      </div>
+
+      <!-- Teacher Login Section (Hidden by default) -->
+      <div id="teacher-login-section" class="hidden">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">
+          Login Guru
+        </h1>
+        <div id="teacher-login-alert" class="alert alert-error hidden"></div>
+        <p class="text-center text-gray-600 mb-6">
+          Untuk login sebagai guru, Anda akan diarahkan untuk otentikasi dengan
+          akun Google Anda.
+        </p>
+        <button id="auth-teacher-btn" class="btn-primary">
+          Login dengan Google
+        </button>
+        <a href="#" id="switch-to-parent" class="btn-link"
+          >Login sebagai Wali Murid</a
+        >
+      </div>
+
+      <!-- Dashboard Section (Hidden by default for both roles) -->
+      <div id="dashboard-section" class="hidden">
+        <button id="logout-button" class="btn-primary mb-6 float-right">
+          Logout
+        </button>
+        <h1 class="text-3xl font-bold text-gray-800 mb-8" id="dashboard-title">
+          Dashboard Progres Siswa
+        </h1>
+
+        <!-- Parent View Dashboard Content -->
+        <div id="parent-dashboard-content">
+          <div class="dashboard-card">
+            <h2 class="dashboard-card-title">Informasi Siswa</h2>
+            <p class="text-gray-700 mb-2">
+              <span class="font-semibold">Nama:</span>
+              <span id="student-name"></span>
+            </p>
+            <p class="text-gray-700">
+              <span class="font-semibold">Kelas:</span>
+              <span id="student-class"></span>
+            </p>
+          </div>
+          <div class="dashboard-card">
+            <h2 class="dashboard-card-title">Progres Tugas</h2>
+            <div id="student-tasks" class="space-y-3">
+              <!-- Tasks will be loaded here -->
+              <p class="text-gray-500">Memuat progres tugas...</p>
+            </div>
+          </div>
+          <div class="dashboard-card">
+            <h2 class="dashboard-card-title">Jadwal Pelajaran</h2>
+            <div id="class-schedule" class="space-y-3">
+              <!-- Schedule will be loaded here -->
+              <p class="text-gray-500">Memuat jadwal pelajaran...</p>
+            </div>
+          </div>
+          <div class="dashboard-card">
+            <h2 class="dashboard-card-title">Nilai Tugas Mingguan</h2>
+            <div id="weekly-grades" class="space-y-3">
+              <!-- Grades will be loaded here -->
+              <p class="text-gray-500">Memuat nilai...</p>
+            </div>
+          </div>
+          <div class="dashboard-card">
+            <h2 class="dashboard-card-title">Kehadiran Mingguan</h2>
+            <div id="weekly-attendance" class="space-y-3">
+              <!-- Attendance will be loaded here -->
+              <p class="text-gray-500">Memuat data kehadiran...</p>
+            </div>
+          </div>
+          <div class="dashboard-card">
+            <h2 class="dashboard-card-title">Catatan Guru</h2>
+            <div id="teacher-notes" class="space-y-3">
+              <!-- Notes will be loaded here -->
+              <p class="text-gray-500">Memuat catatan guru...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Teacher View Dashboard Content (Hidden by default) -->
+        <div id="teacher-dashboard-content" class="hidden">
+          <div class="dashboard-card">
+            <h2 class="dashboard-card-title">Pilih Siswa</h2>
+            <div id="teacher-alert" class="alert alert-error hidden"></div>
+            <form id="select-student-form" class="space-y-4">
+              <div>
+                <label
+                  for="teacher-student-nis"
+                  class="block text-gray-700 text-sm font-medium mb-2"
+                  >NIS Siswa</label
+                >
+                <input
+                  type="text"
+                  id="teacher-student-nis"
+                  class="form-input"
+                  placeholder="Masukkan NIS Siswa"
+                  required
+                />
+              </div>
+              <button type="submit" class="btn-primary">Cari Siswa</button>
+            </form>
+            <div
+              id="selected-student-info"
+              class="mt-4 hidden p-3 bg-blue-50 border border-blue-200 rounded-lg"
+            >
+              <p class="text-blue-800">
+                <span class="font-semibold">Siswa Terpilih:</span>
+                <span id="selected-student-name"></span> (<span
+                  id="selected-student-nis-display"
+                ></span
+                >)
+              </p>
+            </div>
+          </div>
+
+          <div id="data-input-forms" class="hidden space-y-6">
+            <!-- Form Input Nilai -->
+            <div class="dashboard-card">
+              <h2 class="dashboard-card-title">Input Nilai</h2>
+              <form id="grade-input-form" class="space-y-4">
+                <div>
+                  <label
+                    for="grade-week"
+                    class="block text-gray-700 text-sm font-medium mb-2"
+                    >Minggu ke-</label
+                  >
+                  <input
+                    type="number"
+                    id="grade-week"
+                    class="form-input"
+                    min="1"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    for="grade-task"
+                    class="block text-gray-700 text-sm font-medium mb-2"
+                    >Nama Tugas</label
+                  >
+                  <input
+                    type="text"
+                    id="grade-task"
+                    class="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    for="grade-score"
+                    class="block text-gray-700 text-sm font-medium mb-2"
+                    >Nilai</label
+                  >
+                  <input
+                    type="number"
+                    id="grade-score"
+                    class="form-input"
+                    min="0"
+                    max="100"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn-primary">Simpan Nilai</button>
+              </form>
+            </div>
+
+            <!-- Form Input Kehadiran -->
+            <div class="dashboard-card">
+              <h2 class="dashboard-card-title">Input Kehadiran</h2>
+              <form id="attendance-input-form" class="space-y-4">
+                <div>
+                  <label
+                    for="attendance-date"
+                    class="block text-gray-700 text-sm font-medium mb-2"
+                    >Tanggal</label
+                  >
+                  <input
+                    type="date"
+                    id="attendance-date"
+                    class="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    for="attendance-status"
+                    class="block text-gray-700 text-sm font-medium mb-2"
+                    >Status</label
+                  >
+                  <select id="attendance-status" class="form-select" required>
+                    <option value="">Pilih Status</option>
+                    <option value="Hadir">Hadir</option>
+                    <option value="Izin">Izin</option>
+                    <option value="Sakit">Sakit</option>
+                    <option value="Alpha">Alpha</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn-primary">
+                  Simpan Kehadiran
+                </button>
+              </form>
+            </div>
+
+            <!-- Form Input Catatan Guru -->
+            <div class="dashboard-card">
+              <h2 class="dashboard-card-title">Input Catatan Guru</h2>
+              <form id="note-input-form" class="space-y-4">
+                <div>
+                  <label
+                    for="note-date"
+                    class="block text-gray-700 text-sm font-medium mb-2"
+                    >Tanggal</label
+                  >
+                  <input
+                    type="date"
+                    id="note-date"
+                    class="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    for="note-text"
+                    class="block text-gray-700 text-sm font-medium mb-2"
+                    >Catatan</label
+                  >
+                  <textarea
+                    id="note-text"
+                    class="form-input h-24 resize-y"
+                    placeholder="Tulis catatan di sini..."
+                    required
+                  ></textarea>
+                </div>
+                <button type="submit" class="btn-primary">
+                  Simpan Catatan
+                </button>
+              </form>
+            </div>
+
+            <!-- Form Input Tugas -->
+            <div class="dashboard-card">
+              <h2 class="dashboard-card-title">Input Tugas</h2>
+              <form id="task-input-form" class="space-y-4">
+                <div>
+                  <label
+                    for="task-name"
+                    class="block text-gray-700 text-sm font-medium mb-2"
+                    >Nama Tugas</label
+                  >
+                  <input
+                    type="text"
+                    id="task-name"
+                    class="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    for="task-subject"
+                    class="block text-gray-700 text-sm font-medium mb-2"
+                    >Mata Pelajaran</label
+                  >
+                  <input
+                    type="text"
+                    id="task-subject"
+                    class="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    for="task-deadline"
+                    class="block text-gray-700 text-sm font-medium mb-2"
+                    >Deadline</label
+                  >
+                  <input
+                    type="date"
+                    id="task-deadline"
+                    class="form-input"
+                    required
+                  />
+                </div>
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="task-completed"
+                    class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label
+                    for="task-completed"
+                    class="text-gray-700 text-sm font-medium"
+                    >Selesai</label
+                  >
+                </div>
+                <button type="submit" class="btn-primary">Simpan Tugas</button>
+              </form>
+            </div>
+
+            <!-- Form Input Jadwal Pelajaran -->
+            <div class="dashboard-card">
+              <h2 class="dashboard-card-title">Input Jadwal Pelajaran</h2>
+              <form id="schedule-input-form" class="space-y-4">
+                <div>
+                  <label
+                    for="schedule-day"
+                    class="block text-gray-700 text-sm font-medium mb-2"
+                    >Hari</label
+                  >
+                  <select id="schedule-day" class="form-select" required>
+                    <option value="">Pilih Hari</option>
+                    <option value="Senin">Senin</option>
+                    <option value="Selasa">Selasa</option>
+                    <option value="Rabu">Rabu</option>
+                    <option value="Kamis">Kamis</option>
+                    <option value="Jumat">Jumat</option>
+                    <option value="Sabtu">Sabtu</option>
+                    <option value="Minggu">Minggu</option>
+                  </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      for="schedule-start"
+                      class="block text-gray-700 text-sm font-medium mb-2"
+                      >Mulai (HH:MM)</label
+                    >
+                    <input
+                      type="time"
+                      id="schedule-start"
+                      class="form-input"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="schedule-end"
+                      class="block text-gray-700 text-sm font-medium mb-2"
+                      >Selesai (HH:MM)</label
+                    >
+                    <input
+                      type="time"
+                      id="schedule-end"
+                      class="form-input"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label
+                    for="schedule-subject"
+                    class="block text-gray-700 text-sm font-medium mb-2"
+                    >Mata Pelajaran</label
+                  >
+                  <input
+                    type="text"
+                    id="schedule-subject"
+                    class="form-input"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn-primary">Simpan Jadwal</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // API key for the Gemini API (empty string, Canvas will provide it at runtime)
+      const API_KEY = "";
+      const BASE_URL =
+        "https://generativelanguage.googleapis.com/v1beta/models/";
+
+      // IMPORTANT: GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+      // URL Web App untuk Wali Murid (Hanya Baca, Akses: Anyone)
+      const PARENT_WEB_APP_URL =
+        "https://script.google.com/macros/s/AKfycbxGRF7vwjcJ51Z9bUB2dH0k_hJ2hGevV2JchM8aghoPzZAP2dNu-8Bv2xc4zLjvNRXVCQ/exec";
+      // URL Web App untuk Guru (Baca & Tulis, Akses: Anyone with Google account)
+      const TEACHER_WEB_APP_URL =
+        "Yhttps://script.google.com/macros/s/AKfycbwM258yBSbNODgJLRarCOdAIRdPQnLZ3HHXCKi3alTAtoLsWH1OCxmdrD4OIKiMLCz2cA/exec";
+
+      // Element references
+      const parentLoginSection = document.getElementById(
+        "parent-login-section"
+      );
+      const teacherLoginSection = document.getElementById(
+        "teacher-login-section"
+      );
+      const parentLoginForm = document.getElementById("parent-login-form");
+      const parentLoginAlert = document.getElementById("parent-login-alert");
+      const authTeacherBtn = document.getElementById("auth-teacher-btn");
+      const teacherLoginAlert = document.getElementById("teacher-login-alert");
+      const switchToTeacherLink = document.getElementById("switch-to-teacher");
+      const switchToParentLink = document.getElementById("switch-to-parent");
+
+      const dashboardSection = document.getElementById("dashboard-section");
+      const logoutButton = document.getElementById("logout-button");
+      const loader = document.getElementById("loader");
+      const dashboardTitle = document.getElementById("dashboard-title");
+
+      const parentDashboardContent = document.getElementById(
+        "parent-dashboard-content"
+      );
+      const teacherDashboardContent = document.getElementById(
+        "teacher-dashboard-content"
+      );
+
+      const studentName = document.getElementById("student-name");
+      const studentClass = document.getElementById("student-class");
+      const studentTasks = document.getElementById("student-tasks");
+      const classSchedule = document.getElementById("class-schedule");
+      const weeklyGrades = document.getElementById("weekly-grades");
+      const weeklyAttendance = document.getElementById("weekly-attendance");
+      const teacherNotes = document.getElementById("teacher-notes");
+
+      // Teacher dashboard specific elements
+      const teacherAlert = document.getElementById("teacher-alert");
+      const selectStudentForm = document.getElementById("select-student-form");
+      const teacherStudentNisInput = document.getElementById(
+        "teacher-student-nis"
+      );
+      const selectedStudentInfo = document.getElementById(
+        "selected-student-info"
+      );
+      const selectedStudentNameDisplay = document.getElementById(
+        "selected-student-name"
+      );
+      const selectedStudentNisDisplay = document.getElementById(
+        "selected-student-nis-display"
+      );
+      const dataInputForms = document.getElementById("data-input-forms");
+
+      const gradeInputForm = document.getElementById("grade-input-form");
+      const attendanceInputForm = document.getElementById(
+        "attendance-input-form"
+      );
+      const noteInputForm = document.getElementById("note-input-form");
+      const taskInputForm = document.getElementById("task-input-form");
+      const scheduleInputForm = document.getElementById("schedule-input-form");
+
+      let currentRole = "parent"; // 'parent' or 'teacher'
+      let currentStudentNis = null; // NIS of the currently selected student in teacher mode
+
+      // --- Utility Functions ---
+      function showLoader() {
+        loader.classList.add("show");
+        document
+          .querySelectorAll(
+            "form input, form button, form select, form textarea, a.btn-link"
+          )
+          .forEach((el) => (el.disabled = true));
+      }
+
+      function hideLoader() {
+        loader.classList.remove("show");
+        document
+          .querySelectorAll(
+            "form input, form button, form select, form textarea, a.btn-link"
+          )
+          .forEach((el) => (el.disabled = false));
+      }
+
+      function showAlert(element, message, type) {
+        element.textContent = message;
+        element.classList.remove("hidden", "alert-error", "alert-success");
+        element.classList.add("show", `alert-${type}`);
+        setTimeout(() => {
+          element.classList.remove("show");
+          element.classList.add("hidden");
+        }, 5000); // Hide after 5 seconds
+      }
+
+      // --- Fetch Data Functions ---
+
+      /**
+       * Fetches student data for parent view from Parent Web App.
+       * @param {string} nis - Student's NIS.
+       * @returns {Promise<Object|null>} Student data or null if not found/error.
+       */
+      async function fetchParentStudentData(nis) {
+        showLoader();
+        try {
+          // Fetch data from your PARENT Google Apps Script Web App
+          const response = await fetch(`${PARENT_WEB_APP_URL}?nis=${nis}`);
+          const data = await response.json();
+          hideLoader();
+
+          if (data && data.nis === nis) {
+            return data;
+          } else if (data && data.error) {
+            console.error("Apps Script Error:", data.error);
+            return null;
+          } else {
+            return null; // No matching student found or empty response
+          }
+        } catch (error) {
+          console.error("Error fetching parent student data:", error);
+          hideLoader();
+          return null;
+        }
+      }
+
+      /**
+       * Fetches student data for teacher view (can fetch all student info or specific).
+       * For this example, it uses the same Apps Script logic but through the teacher URL.
+       * @param {string} nis - Student's NIS.
+       * @returns {Promise<Object|null>} Student data or null if not found/error.
+       */
+      async function fetchStudentDataForTeacher(nis) {
+        showLoader();
+        try {
+          // Fetch data from your TEACHER Google Apps Script Web App (using GET for read)
+          const response = await fetch(`${TEACHER_WEB_APP_URL}?nis=${nis}`);
+          const data = await response.json();
+          hideLoader();
+
+          if (data && data.nis === nis) {
+            return data;
+          } else if (data && data.error) {
+            console.error("Apps Script Error:", data.error);
+            showAlert(teacherAlert, `Error: ${data.error}`, "error");
+            return null;
+          } else {
+            return null; // No matching student found or empty response
+          }
+        } catch (error) {
+          console.error("Error fetching student data for teacher:", error);
+          showAlert(
+            teacherAlert,
+            "Terjadi kesalahan saat mencari siswa. Pastikan Anda sudah login dengan akun Google yang terdaftar.",
+            "error"
+          );
+          hideLoader();
+          return null;
+        }
+      }
+
+      /**
+       * Sends data to Google Apps Script for saving.
+       * @param {string} type - Type of data ('nilai', 'kehadiran', 'catatan', 'tugas', 'jadwal').
+       * @param {Object} data - The data payload to send.
+       * @returns {Promise<boolean>} True if successful, false otherwise.
+       */
+      async function saveDataToSpreadsheet(type, data) {
+        showLoader();
+        try {
+          const payload = {
+            action: "saveData",
+            type: type,
+            nis: currentStudentNis, // Include the NIS of the selected student
+            data: data,
+          };
+
+          const response = await fetch(TEACHER_WEB_APP_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const result = await response.json();
+          hideLoader();
+
+          if (result.status === "success") {
+            showAlert(teacherAlert, "Data berhasil disimpan!", "success");
+            return true;
+          } else {
+            console.error("Save error:", result.error);
+            showAlert(
+              teacherAlert,
+              `Gagal menyimpan data: ${result.error || "Terjadi kesalahan."}`,
+              "error"
+            );
+            return false;
+          }
+        } catch (error) {
+          console.error("Error saving data:", error);
+          showAlert(
+            teacherAlert,
+            "Terjadi kesalahan saat menyimpan data. Pastikan Anda sudah login dan memiliki akses.",
+            "error"
+          );
+          hideLoader();
+          return false;
+        }
+      }
+
+      // --- Render Functions ---
+      function renderDashboard(studentData) {
+        studentName.textContent = studentData.nama || "N/A";
+        studentClass.textContent = studentData.kelas || "N/A";
+
+        // Render Tasks
+        studentTasks.innerHTML = "";
+        if (studentData.tugas_siswa && studentData.tugas_siswa.length > 0) {
+          const sortedTasks = studentData.tugas_siswa.sort((a, b) => {
+            if (a.Selesai === b.Selesai) {
+              return new Date(a.Deadline) - new Date(b.Deadline);
+            }
+            return a.Selesai ? 1 : -1; // Incomplete tasks come first
+          });
+
+          sortedTasks.forEach((task) => {
+            const p = document.createElement("p");
+            p.className = `text-gray-700 flex justify-between items-center ${
+              task.Selesai ? "task-item completed" : ""
+            }`;
+            p.innerHTML = `
+                        <span>
+                            <span class="font-medium">${task.Nama}</span>
+                            <span class="text-sm text-gray-500">(${
+                              task.Matapelajaran
+                            })</span>
+                            <br>
+                            <span class="text-xs text-gray-500">Deadline: ${
+                              task.Deadline
+                            }</span>
+                        </span>
+                        <span class="text-sm font-semibold ${
+                          task.Selesai ? "text-green-600" : "text-red-600"
+                        }">
+                            ${task.Selesai ? "Selesai" : "Belum"}
+                        </span>
+                    `;
+            studentTasks.appendChild(p);
+          });
+        } else {
+          studentTasks.innerHTML =
+            '<p class="text-gray-500">Tidak ada data tugas.</p>';
+        }
+
+        // Render Schedule
+        classSchedule.innerHTML = "";
+        if (
+          studentData.jadwal_pelajaran &&
+          studentData.jadwal_pelajaran.length > 0
+        ) {
+          const dayOrder = [
+            "Senin",
+            "Selasa",
+            "Rabu",
+            "Kamis",
+            "Jumat",
+            "Sabtu",
+            "Minggu",
+          ];
+          const sortedSchedule = studentData.jadwal_pelajaran.sort((a, b) => {
+            const dayA = dayOrder.indexOf(a.Hari);
+            const dayB = dayOrder.indexOf(b.Hari);
+            if (dayA === dayB) {
+              const timeA = parseInt(a.Mulai.replace(":", ""));
+              const timeB = parseInt(b.Mulai.replace(":", ""));
+              return timeA - timeB;
+            }
+            return dayA - dayB;
+          });
+
+          let currentDay = "";
+          sortedSchedule.forEach((lesson) => {
+            if (lesson.Hari !== currentDay) {
+              const dayHeader = document.createElement("h3");
+              dayHeader.className =
+                "text-md font-semibold text-gray-800 mt-4 mb-2";
+              dayHeader.textContent = lesson.Hari;
+              classSchedule.appendChild(dayHeader);
+              currentDay = lesson.Hari;
+            }
+            const p = document.createElement("p");
+            p.className = "text-gray-700";
+            p.innerHTML = `<span class="font-medium">${lesson.Mulai}-${lesson.Selesai}:</span> ${lesson.Matapelajaran}`;
+            classSchedule.appendChild(p);
+          });
+        } else {
+          classSchedule.innerHTML =
+            '<p class="text-gray-500">Tidak ada data jadwal pelajaran.</p>';
+        }
+
+        // Render Grades
+        weeklyGrades.innerHTML = "";
+        if (
+          studentData.nilai_tugas_mingguan &&
+          studentData.nilai_tugas_mingguan.length > 0
+        ) {
+          studentData.nilai_tugas_mingguan.forEach((grade) => {
+            const p = document.createElement("p");
+            p.className = "text-gray-700";
+            p.innerHTML = `<span class="font-medium">Minggu ${grade.Minggu}:</span> ${grade.Tugas} - <span class="font-semibold text-blue-600">${grade.Nilai}</span>`;
+            weeklyGrades.appendChild(p);
+          });
+        } else {
+          weeklyGrades.innerHTML =
+            '<p class="text-gray-500">Tidak ada data nilai.</p>';
+        }
+
+        // Render Attendance
+        weeklyAttendance.innerHTML = "";
+        if (
+          studentData.kehadiran_mingguan &&
+          studentData.kehadiran_mingguan.length > 0
+        ) {
+          studentData.kehadiran_mingguan.forEach((attendance) => {
+            const p = document.createElement("p");
+            p.className = "text-gray-700";
+            p.innerHTML = `<span class="font-medium">${
+              attendance.Tanggal
+            }:</span> <span class="${
+              attendance.Status === "Hadir" ? "text-green-600" : "text-red-600"
+            }">${attendance.Status}</span>`;
+            weeklyAttendance.appendChild(p);
+          });
+        } else {
+          weeklyAttendance.innerHTML =
+            '<p class="text-gray-500">Tidak ada data kehadiran.</p>';
+        }
+
+        // Render Teacher Notes
+        teacherNotes.innerHTML = "";
+        if (
+          studentData.catatan_guru_mingguan &&
+          studentData.catatan_guru_mingguan.length > 0
+        ) {
+          studentData.catatan_guru_mingguan.forEach((note) => {
+            const p = document.createElement("p");
+            p.className = "text-gray-700";
+            p.innerHTML = `<span class="font-medium">${note.Tanggal}:</span> ${note.Catatan}`;
+            teacherNotes.appendChild(p);
+          });
+        } else {
+          teacherNotes.innerHTML =
+            '<p class="text-gray-500">Tidak ada catatan guru.</p>';
+        }
+
+        // Hide all login sections and show dashboard
+        parentLoginSection.classList.add("hidden");
+        teacherLoginSection.classList.add("hidden");
+        dashboardSection.classList.remove("hidden");
+
+        if (currentRole === "parent") {
+          dashboardTitle.textContent = "Dashboard Progres Siswa";
+          parentDashboardContent.classList.remove("hidden");
+          teacherDashboardContent.classList.add("hidden");
+        } else {
+          // currentRole === 'teacher'
+          dashboardTitle.textContent = "Dashboard Guru";
+          parentDashboardContent.classList.add("hidden");
+          teacherDashboardContent.classList.remove("hidden");
+          dataInputForms.classList.add("hidden"); // Hide input forms until student is selected
+          selectedStudentInfo.classList.add("hidden");
+        }
+      }
+
+      // --- Event Listeners ---
+
+      // Switch to Teacher Login
+      switchToTeacherLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        currentRole = "teacher";
+        parentLoginSection.classList.add("hidden");
+        teacherLoginSection.classList.remove("hidden");
+        dashboardSection.classList.add("hidden"); // Hide dashboard if switching roles
+      });
+
+      // Switch to Parent Login
+      switchToParentLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        currentRole = "parent";
+        teacherLoginSection.classList.add("hidden");
+        parentLoginSection.classList.remove("hidden");
+        dashboardSection.classList.add("hidden"); // Hide dashboard if switching roles
+      });
+
+      // Parent Login
+      parentLoginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const nis = document.getElementById("parent-nis").value.trim();
+
+        if (!nis) {
+          showAlert(parentLoginAlert, "NIS harus diisi.", "error");
+          return;
+        }
+
+        const studentData = await fetchParentStudentData(nis);
+
+        if (studentData) {
+          renderDashboard(studentData);
+        } else {
+          showAlert(
+            parentLoginAlert,
+            "NIS tidak ditemukan. Silakan coba lagi.",
+            "error"
+          );
+        }
+      });
+
+      // Teacher Login (triggers Apps Script Web App URL, which will handle Google OAuth)
+      authTeacherBtn.addEventListener("click", () => {
+        // Let's simulate a successful teacher login by directly showing the dashboard
+        // and relying on subsequent calls to TEACHER_WEB_APP_URL (for data saving)
+        // to perform the actual email validation. This is a simplification for the client-side UI.
+        renderDashboard({}); // Render empty dashboard for teacher to select student
+        showAlert(
+          teacherLoginAlert,
+          "Silakan pilih siswa yang ingin Anda kelola datanya.",
+          "success"
+        );
+      });
+
+      // Logout
+      logoutButton.addEventListener("click", () => {
+        dashboardSection.classList.add("hidden");
+        // Show the current login section based on the role before logout
+        if (currentRole === "parent") {
+          parentLoginSection.classList.remove("hidden");
+          parentLoginForm.reset();
+          showAlert(parentLoginAlert, "Anda telah berhasil logout.", "success");
+        } else {
+          // currentRole === 'teacher'
+          teacherLoginSection.classList.remove("hidden");
+          // No form reset needed for teacher login button
+          showAlert(
+            teacherLoginAlert,
+            "Anda telah berhasil logout.",
+            "success"
+          );
+        }
+        currentStudentNis = null; // Clear selected student in teacher mode
+      });
+
+      // Teacher: Select Student Form
+      selectStudentForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const nis = teacherStudentNisInput.value.trim();
+
+        if (!nis) {
+          showAlert(teacherAlert, "NIS Siswa harus diisi.", "error");
+          return;
+        }
+
+        const studentData = await fetchStudentDataForTeacher(nis); // Use teacher's fetch function
+
+        if (studentData) {
+          currentStudentNis = nis;
+          selectedStudentNameDisplay.textContent = studentData.nama || "N/A";
+          selectedStudentNisDisplay.textContent = studentData.nis || "N/A";
+          selectedStudentInfo.classList.remove("hidden");
+          dataInputForms.classList.remove("hidden");
+          showAlert(
+            teacherAlert,
+            `Siswa ${studentData.nama} (${nis}) berhasil dipilih.`,
+            "success"
+          );
+        } else {
+          showAlert(
+            teacherAlert,
+            "Siswa dengan NIS tersebut tidak ditemukan atau Anda tidak memiliki akses.",
+            "error"
+          );
+          selectedStudentInfo.classList.add("hidden");
+          dataInputForms.classList.add("hidden");
+          currentStudentNis = null;
+        }
+      });
+
+      // --- Teacher Data Input Forms ---
+      gradeInputForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!currentStudentNis) {
+          showAlert(teacherAlert, "Pilih siswa terlebih dahulu.", "error");
+          return;
+        }
+
+        const data = {
+          Minggu: parseInt(document.getElementById("grade-week").value),
+          Tugas: document.getElementById("grade-task").value,
+          Nilai: parseInt(document.getElementById("grade-score").value),
+        };
+        if (await saveDataToSpreadsheet("nilai", data)) {
+          gradeInputForm.reset();
+        }
+      });
+
+      attendanceInputForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!currentStudentNis) {
+          showAlert(teacherAlert, "Pilih siswa terlebih dahulu.", "error");
+          return;
+        }
+
+        const data = {
+          Tanggal: document.getElementById("attendance-date").value,
+          Status: document.getElementById("attendance-status").value,
+        };
+        if (await saveDataToSpreadsheet("kehadiran", data)) {
+          attendanceInputForm.reset();
+        }
+      });
+
+      noteInputForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!currentStudentNis) {
+          showAlert(teacherAlert, "Pilih siswa terlebih dahulu.", "error");
+          return;
+        }
+
+        const data = {
+          Tanggal: document.getElementById("note-date").value,
+          Catatan: document.getElementById("note-text").value,
+        };
+        if (await saveDataToSpreadsheet("catatan", data)) {
+          noteInputForm.reset();
+        }
+      });
+
+      taskInputForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!currentStudentNis) {
+          showAlert(teacherAlert, "Pilih siswa terlebih dahulu.", "error");
+          return;
+        }
+
+        const data = {
+          Nama: document.getElementById("task-name").value,
+          Matapelajaran: document.getElementById("task-subject").value,
+          Deadline: document.getElementById("task-deadline").value,
+          Selesai: document.getElementById("task-completed").checked, // Boolean value
+        };
+        if (await saveDataToSpreadsheet("tugas", data)) {
+          taskInputForm.reset();
+          document.getElementById("task-completed").checked = false;
+        }
+      });
+
+      scheduleInputForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!currentStudentNis) {
+          showAlert(teacherAlert, "Pilih siswa terlebih dahulu.", "error");
+          return;
+        }
+
+        const data = {
+          Hari: document.getElementById("schedule-day").value,
+          Mulai: document.getElementById("schedule-start").value,
+          Selesai: document.getElementById("schedule-end").value,
+          Matapelajaran: document.getElementById("schedule-subject").value,
+        };
+        if (await saveDataToSpreadsheet("jadwal", data)) {
+          scheduleInputForm.reset();
+        }
+      });
+
+      // Initial display state
+      document.addEventListener("DOMContentLoaded", () => {
+        parentLoginSection.classList.remove("hidden"); // Show parent login by default
+        teacherLoginSection.classList.add("hidden");
+      });
+    </script>
+  </body>
+</html>
